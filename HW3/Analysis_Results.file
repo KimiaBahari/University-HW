@@ -1,0 +1,92 @@
+1. تحلیل نتایج مدل
+برای تحلیل نتایج مدل باید ارزیابی‌های مختلفی را انجام دهید. از آنجا که در کد شما از معیارهایی مانند دقت (accuracy)، یادآوری (recall)، نمره F1 (f1-score) و AUC-ROC برای ارزیابی مدل استفاده کرده‌اید، حالا باید این مقادیر را به دقت تجزیه و تحلیل کنیم.
+
+1.1 ماتریس سردرگمی (Confusion Matrix)
+برای تحلیل پیش‌بینی‌های درست و نادرست، ماتریس سردرگمی یک ابزار بسیار مفید است. شما می‌توانید با استفاده از کد زیر ماتریس سردرگمی را محاسبه کنید:
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+# Calculate confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+
+# Visualize confusion matrix using seaborn heatmap
+plt.figure(figsize=(6, 6))
+sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", xticklabels=["Normal", "Attack"], yticklabels=["Normal", "Attack"])
+plt.title("Confusion Matrix")
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.show()
+
+در این ماتریس، مقادیر به این صورت خواهند بود:
+
+True Positive (TP): حملات درست شناسایی شده.
+False Positive (FP): نمونه‌های غیرحمله به اشتباه به عنوان حمله شناسایی شده‌اند (هشدارهای غلط).
+True Negative (TN): نمونه‌های غیرحمله به درستی شناسایی شده‌اند.
+False Negative (FN): حملات به اشتباه به عنوان غیرحمله شناسایی شده‌اند (غفلت از حملات).
+بر اساس این مقادیر می‌توانید درک بهتری از عملکرد مدل داشته باشید و به‌ویژه اگر میزان False Negative بالا باشد، این یعنی مدل قادر به شناسایی حملات خاصی نبوده است.
+
+1.2 تجزیه و تحلیل نتایج
+اگر مدل دقت (accuracy) بالایی دارد ولی یادآوری (recall) پایین است، این نشان می‌دهد که مدل حملات را به درستی شناسایی نمی‌کند، حتی اگر درصد بالایی از پیش‌بینی‌ها درست باشد.
+اگر AUC-ROC بالا باشد، این نشان می‌دهد که مدل به‌طور کلی توانایی خوبی در تفکیک حملات از غیرحملات دارد.
+نمره F1 به شما کمک می‌کند تا بین دقت و یادآوری تعادل برقرار کنید، به‌ویژه اگر داده‌های شما نامتوازن باشند (یعنی تعداد نمونه‌های حمله خیلی کمتر از غیرحمله‌ها باشد).
+2. شناسایی ویژگی‌های مهم
+برای شناسایی ویژگی‌هایی که مدل برای شناسایی حملات استفاده کرده، می‌توانید از چندین روش بهره ببرید. در کد شما، چون از مدل LSTM استفاده کرده‌اید، تشخیص اهمیت ویژگی‌ها از طریق خود مدل ممکن است کمی پیچیده باشد، اما تکنیک‌های مختلفی برای تحلیل ویژگی‌ها وجود دارد.
+
+2.1 استخراج ویژگی‌های مهم با استفاده از مدل‌های دیگر
+در صورتی که بخواهید ویژگی‌های مهم‌تر را شناسایی کنید، می‌توانید از مدل‌های درخت تصمیم یا Random Forest که می‌توانند اهمیت ویژگی‌ها را محاسبه کنند استفاده کنید.
+
+مثال برای استفاده از Random Forest برای شناسایی اهمیت ویژگی‌ها:
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+
+# Train a Random Forest classifier
+rf = RandomForestClassifier(n_estimators=100, random_state=42)
+rf.fit(X_train.reshape(X_train.shape[0], X_train.shape[2]), y_train)
+
+# Get feature importance
+feature_importances = rf.feature_importances_
+
+# Sort features by importance
+sorted_idx = np.argsort(feature_importances)[::-1]
+
+# Print feature names and their importance
+for idx in sorted_idx:
+    print(f"Feature: {X.columns[idx]}, Importance: {feature_importances[idx]}")
+
+این کد، ویژگی‌هایی که بیشتر به شناسایی حملات کمک می‌کنند را بر اساس اهمیتشان مرتب می‌کند.
+
+2.2 استفاده از SHAP (SHapley Additive exPlanations)
+برای مدل‌های پیچیده‌تر مانند LSTM، استفاده از کتابخانه SHAP می‌تواند به شما کمک کند تا بفهمید که هر ویژگی چگونه بر پیش‌بینی مدل تاثیر می‌گذارد.
+pip install shap
+import shap
+
+# Create an explainer object
+explainer = shap.KernelExplainer(model.predict, X_train.reshape(X_train.shape[0], X_train.shape[2]))
+
+# Calculate SHAP values
+shap_values = explainer.shap_values(X_test.reshape(X_test.shape[0], X_test.shape[2]))
+
+# Visualize SHAP values
+shap.summary_plot(shap_values[0], X_test.reshape(X_test.shape[0], X_test.shape[2]))
+
+این روش به شما کمک می‌کند تا بفهمید که کدام ویژگی‌ها و کدام نمونه‌ها بیشترین تأثیر را بر پیش‌بینی حملات دارند.
+
+2.3 تجزیه و تحلیل با استفاده از LIME (Local Interpretable Model-agnostic Explanations)
+در کنار SHAP، LIME هم یک ابزار محبوب برای توضیح پیش‌بینی‌های مدل‌های پیچیده است. با استفاده از LIME می‌توانید تفسیر محلی برای پیش‌بینی‌های مدل LSTM بدست آورید و بفهمید که هر ویژگی چگونه بر پیش‌بینی مدل اثر می‌گذارد.
+
+from lime.lime_tabular import LimeTabularExplainer
+
+# Create a LIME explainer
+explainer = LimeTabularExplainer(X_train.reshape(X_train.shape[0], X_train.shape[2]), mode='classification', training_labels=y_train)
+
+# Explain a single prediction
+explanation = explainer.explain_instance(X_test[0].reshape(1, -1), model.predict)
+
+# Show the explanation
+explanation.show_in_notebook()
+
+3. نتیجه‌گیری
+پس از ارزیابی عملکرد مدل با معیارهای مختلف، ماتریس سردرگمی به شما کمک می‌کند تا اشتباهات مدل را شناسایی کرده و ببینید که کجا بیشتر در تشخیص حملات و غیرحملات اشتباه کرده است.
+از تکنیک‌هایی مانند SHAP و LIME می‌توانید برای شناسایی ویژگی‌های مهم استفاده کنید که به مدل کمک کرده‌اند تا حملات را شناسایی کند.
+استفاده از مدل‌های مثل Random Forest می‌تواند به شما کمک کند تا ویژگی‌های کلیدی را شناسایی کنید.
+در نهایت، این تحلیل‌ها به شما کمک می‌کند که مدل خود را بهبود بخشید و ویژگی‌هایی که بیشترین تاثیر را در شناسایی حملات دارند را بهتر درک کنید.
