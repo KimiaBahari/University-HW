@@ -8,7 +8,7 @@ from sklearn.preprocessing import StandardScaler
 import matplotlib.pyplot as plt
 
 # 1. Data Collection
-# Downloading the dataset from UCI Machine Learning Repository
+# Downloading the dataset from UCI Machine Learning in Repository
 url = "https://archive.ics.uci.edu/ml/machine-learning-databases/00375/household_power_consumption.txt"
 # Assuming the file is in CSV format
 data = pd.read_csv(url, sep=';', low_memory=False)
